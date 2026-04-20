@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:background="#F3F4F6">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="💰 极简记账"
+        android:textSize="28sp"
+        android:textStyle="bold"
+        android:textColor="#333333"
+        android:gravity="center"
+        android:layout_marginBottom="30dp"/>
+
+    <!-- 填“买什么了”的输入框 -->
+    <EditText
+        android:id="@+id/editName"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:hint="花在哪了？(例如：午饭)"
+        android:background="#FFFFFF"
+        android:padding="10dp"
+        android:layout_marginBottom="15dp"
+        android:elevation="2dp"/>
+
+    <!-- 填“多少钱”的输入框，限制只能输入数字和小数点 -->
+    <EditText
+        android:id="@+id/editAmount"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:hint="花了多少钱？(例如：25.5)"
+        android:inputType="numberDecimal"
+        android:background="#FFFFFF"
+        android:padding="10dp"
+        android:layout_marginBottom="20dp"
+        android:elevation="2dp"/>
+
+    <!-- 记一笔 按钮 -->
+    <Button
+        android:id="@+id/btnSave"
+        android:layout_width="match_parent"
+        android:layout_height="55dp"
+        android:text="记一笔"
+        android:textSize="18sp"
+        android:backgroundTint="#007AFF"
+        android:textColor="#FFFFFF"/>
+
+    <!-- 显示总计金额 -->
+    <TextView
+        android:id="@+id/tvTotal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="总计花费: ¥0.0"
+        android:textSize="24sp"
+        android:textColor="#FF3B30"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:layout_marginTop="40dp"/>
+
+</LinearLayout>
