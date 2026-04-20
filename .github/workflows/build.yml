@@ -1,7 +1,7 @@
 name: Build Android APK
 on: [push]
 
-# 这一句非常重要：允许云端电脑把生成的签名文件保存回你的仓库
+# 允许云端电脑把生成的签名文件保存回你的仓库
 permissions:
   contents: write
 
@@ -39,9 +39,8 @@ jobs:
             echo "签名文件已存在，直接使用！"
           fi
 
-      - name: Build APK (自动递增版本号)
-        # 这里的 github.run_number 会把每次打包的次数（1,2,3...）当作版本号传给代码
-        run: gradle assembleDebug -PVERSION_CODE=${{ github.run_number }} --no-daemon
+      - name: Build APK (自动递增版本号并输出详细错误日志)
+        run: gradle assembleDebug -PVERSION_CODE=${{ github.run_number }} --no-daemon --stacktrace
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
