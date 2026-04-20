@@ -1,96 +1,112 @@
-package com.myexpense
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:background="#FFFFFF">
 
-import android.content.Context
-import android.graphics.Color
-import android.os.Bundle
-import android.widget.Button
-import android.widget.EditText
-import android.widget.LinearLayout
-import android.widget.TextView
-import android.widget.Toast
-import androidx.appcompat.app.AppCompatActivity
-import org.json.JSONArray
-import org.json.JSONObject
+    <!-- 顶部的当前月份 (我们在代码里给它加上灰底圆角) -->
+    <TextView
+        android:id="@+id/tvMonth"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="202X-XX"
+        android:textSize="14sp"
+        android:textColor="#333333"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:paddingTop="6dp"
+        android:paddingBottom="6dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginBottom="30dp"/>
 
-class MainActivity : AppCompatActivity() {
-
-    private lateinit var recordListLayout: LinearLayout
-    private lateinit var tvTotal: TextView
-    private var jsonArray = JSONArray()
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
-
-        val editName = findViewById<EditText>(R.id.editName)
-        val editAmount = findViewById<EditText>(R.id.editAmount)
-        val btnSave = findViewById<Button>(R.id.btnSave)
-        tvTotal = findViewById(R.id.tvTotal)
-        recordListLayout = findViewById(R.id.recordListLayout)
-
-        // 1. 打开 App 时，读取本地存的历史明细
-        val sharedPreferences = getSharedPreferences("MyExpenseData", Context.MODE_PRIVATE)
-        val historyStr = sharedPreferences.getString("HISTORY_JSON", "[]")
-        jsonArray = JSONArray(historyStr)
-
-        // 2. 把历史明细一条条画到屏幕上，并算出总金额
-        refreshUI()
-
-        // 3. 点击“记一笔”时的操作
-        btnSave.setOnClickListener {
-            val nameStr = editName.text.toString()
-            val amountStr = editAmount.text.toString()
-
-            if (nameStr.isEmpty() || amountStr.isEmpty()) {
-                Toast.makeText(this, "名称和金额都得填哦！", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-
-            // 把新记录做成一个 JSON 对象
-            val newRecord = JSONObject()
-            newRecord.put("name", nameStr)
-            newRecord.put("amount", amountStr.toDouble())
+    <!-- 大圆圈区域：显示总支出 (我们在代码里给它画一个灰色的正圆) -->
+    <LinearLayout
+        android:id="@+id/circleLayout"
+        android:layout_width="160dp"
+        android:layout_height="160dp"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginBottom="30dp">
+        
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="总支出"
+            android:textSize="14sp"
+            android:textColor="#666666"/>
             
-            // 把新记录塞进大列表里
-            jsonArray.put(newRecord)
+        <TextView
+            android:id="@+id/tvTotal"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="0.00"
+            android:textSize="32sp"
+            android:textStyle="bold"
+            android:textColor="#111827"
+            android:layout_marginTop="8dp"/>
+    </LinearLayout>
 
-            // 把大列表转换成字符串，永远保存在手机里
-            sharedPreferences.edit().putString("HISTORY_JSON", jsonArray.toString()).apply()
+    <!-- 输入区域 (必须保留才能记账哦，我把它美化并紧凑排列了) -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="10dp">
+        
+        <EditText
+            android:id="@+id/editName"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="50dp"
+            android:hint="花费 (例: 吃饭)"
+            android:background="#F3F4F6"
+            android:padding="10dp"
+            android:layout_marginEnd="10dp"/>
 
-            // 刷新屏幕显示
-            refreshUI()
+        <EditText
+            android:id="@+id/editAmount"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="50dp"
+            android:hint="金额"
+            android:inputType="numberDecimal"
+            android:background="#F3F4F6"
+            android:padding="10dp"/>
+    </LinearLayout>
 
-            // 清空输入框
-            editName.text.clear()
-            editAmount.text.clear()
-            Toast.makeText(this, "记账成功！", Toast.LENGTH_SHORT).show()
-        }
-    }
+    <!-- 酷黑风格的保存按钮 -->
+    <Button
+        android:id="@+id/btnSave"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:text="记一笔"
+        android:textSize="16sp"
+        android:backgroundTint="#333333"
+        android:textColor="#FFFFFF"
+        android:layout_marginBottom="20dp"/>
 
-    // 这是一个专门用来刷新界面的方法
-    private fun refreshUI() {
-        recordListLayout.removeAllViews() // 先清空屏幕上的旧列表
-        var totalAmount = 0.0
+    <!-- 底部逐月统计标题 -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="📊 逐月支出统计"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:textColor="#333333"
+        android:layout_marginBottom="10dp"/>
 
-        // 循环遍历每一笔明细
-        for (i in 0 until jsonArray.length()) {
-            val item = jsonArray.getJSONObject(i)
-            val name = item.getString("name")
-            val amount = item.getDouble("amount")
-            totalAmount += amount
-
-            // 用代码动态创建一个 TextView 来显示这一笔明细
-            val recordView = TextView(this)
-            recordView.text = "🛒 $name : ¥$amount"
-            recordView.textSize = 16f
-            recordView.setTextColor(Color.parseColor("#333333"))
-            recordView.setPadding(0, 15, 0, 15)
-            
-            // 把这笔明细塞进滑动列表里
-            recordListLayout.addView(recordView)
-        }
-
-        // 更新总金额显示
-        tvTotal.text = "总计花费: ¥$totalAmount"
-    }
-}
+    <!-- 滑动列表 -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+        <LinearLayout
+            android:id="@+id/recordListLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"/>
+    </ScrollView>
+</LinearLayout>
