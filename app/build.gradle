@@ -22,7 +22,7 @@ android {
         minSdk 24
         targetSdk 33
         
-        // 自动读取云端传进来的打包次数，作为版本号（完美解决版本号冲突）
+        // 自动读取云端传进来的打包次数，作为版本号
         def runNumber = project.hasProperty("VERSION_CODE") ? project.property("VERSION_CODE").toInteger() : 1
         versionCode runNumber
         versionName "1.0." + runNumber
@@ -34,6 +34,17 @@ android {
             signingConfig signingConfigs.release
         }
     }
+
+    // 👇 👇 👇 重点来了：这就是修复报错的代码 👇 👇 👇 
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    
+    kotlinOptions {
+        jvmTarget = '17'
+    }
+    // 👆 👆 👆 强制统一使用 Java 17 标准 👆 👆 👆 
 }
 
 dependencies {
