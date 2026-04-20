@@ -2,17 +2,40 @@ plugins {
     id 'com.android.application'
     id 'org.jetbrains.kotlin.android'
 }
+
 android {
     namespace 'com.myexpense'
     compileSdk 33
+
+    // 告诉系统使用我们刚才生成的固定签名
+    signingConfigs {
+        release {
+            storeFile file("my.keystore")
+            storePassword "123456"
+            keyAlias "mykey"
+            keyPassword "123456"
+        }
+    }
+
     defaultConfig {
         applicationId "com.myexpense"
         minSdk 24
         targetSdk 33
-        versionCode 1
-        versionName "1.0"
+        
+        // 自动读取云端传进来的打包次数，作为版本号（完美解决版本号冲突）
+        def runNumber = project.hasProperty("VERSION_CODE") ? project.property("VERSION_CODE").toInteger() : 1
+        versionCode runNumber
+        versionName "1.0." + runNumber
+    }
+
+    buildTypes {
+        debug {
+            // 让平时的测试包也强制使用固定签名
+            signingConfig signingConfigs.release
+        }
     }
 }
+
 dependencies {
     implementation 'androidx.core:core-ktx:1.9.0'
     implementation 'androidx.appcompat:appcompat:1.6.1'
