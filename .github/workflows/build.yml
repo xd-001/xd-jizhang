@@ -1,22 +1,48 @@
 name: Build Android APK
 on: [push]
+
+# 这一句非常重要：允许云端电脑把生成的签名文件保存回你的仓库
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
+
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
         with:
           gradle-version: '8.4'
-      - name: Build APK
-        run: gradle assembleDebug --no-daemon
+
+      - name: 自动生成并保存固定签名 (核心黑科技)
+        run: |
+          if [ ! -f "app/my.keystore" ]; then
+            echo "第一次打包，正在生成专属签名..."
+            keytool -genkey -v -keystore app/my.keystore -alias mykey -storepass 123456 -keypass 123456 -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=MyExpense, O=GitHub"
+            git config --global user.name "github-actions[bot]"
+            git config --global user.email "github-actions[bot]@users.noreply.github.com"
+            git add app/my.keystore
+            git commit -m "Auto-generate fixed keystore"
+            git push
+          else
+            echo "签名文件已存在，直接使用！"
+          fi
+
+      - name: Build APK (自动递增版本号)
+        # 这里的 github.run_number 会把每次打包的次数（1,2,3...）当作版本号传给代码
+        run: gradle assembleDebug -PVERSION_CODE=${{ github.run_number }} --no-daemon
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
