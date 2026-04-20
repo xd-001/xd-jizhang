@@ -14,9 +14,8 @@
         android:textStyle="bold"
         android:textColor="#333333"
         android:gravity="center"
-        android:layout_marginBottom="30dp"/>
+        android:layout_marginBottom="20dp"/>
 
-    <!-- 填“买什么了”的输入框 -->
     <EditText
         android:id="@+id/editName"
         android:layout_width="match_parent"
@@ -24,10 +23,9 @@
         android:hint="花在哪了？(例如：午饭)"
         android:background="#FFFFFF"
         android:padding="10dp"
-        android:layout_marginBottom="15dp"
+        android:layout_marginBottom="10dp"
         android:elevation="2dp"/>
 
-    <!-- 填“多少钱”的输入框，限制只能输入数字和小数点 -->
     <EditText
         android:id="@+id/editAmount"
         android:layout_width="match_parent"
@@ -36,10 +34,9 @@
         android:inputType="numberDecimal"
         android:background="#FFFFFF"
         android:padding="10dp"
-        android:layout_marginBottom="20dp"
+        android:layout_marginBottom="15dp"
         android:elevation="2dp"/>
 
-    <!-- 记一笔 按钮 -->
     <Button
         android:id="@+id/btnSave"
         android:layout_width="match_parent"
@@ -49,16 +46,39 @@
         android:backgroundTint="#007AFF"
         android:textColor="#FFFFFF"/>
 
-    <!-- 显示总计金额 -->
     <TextView
         android:id="@+id/tvTotal"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="总计花费: ¥0.0"
-        android:textSize="24sp"
+        android:textSize="22sp"
         android:textColor="#FF3B30"
         android:textStyle="bold"
         android:gravity="center"
-        android:layout_marginTop="40dp"/>
+        android:layout_marginTop="20dp"
+        android:layout_marginBottom="10dp"/>
+
+    <!-- 这里是新加的：账单明细列表区域 -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="账单明细："
+        android:textSize="16sp"
+        android:textColor="#666666"
+        android:layout_marginBottom="5dp"/>
+
+    <!-- ScrollView 让列表超出屏幕时可以上下滑动 -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+        
+        <!-- 我们等会用代码把一笔笔记录塞进这个 LinearLayout 里 -->
+        <LinearLayout
+            android:id="@+id/recordListLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"/>
+    </ScrollView>
 
 </LinearLayout>
