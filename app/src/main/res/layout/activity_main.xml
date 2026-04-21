@@ -5,7 +5,6 @@
     android:layout_height="match_parent"
     android:background="#F5F7FA">
 
-    <!-- 1. 顶部导航栏 (高度固定 48dp) -->
     <LinearLayout
         android:id="@+id/topNav"
         android:layout_width="match_parent"
@@ -17,7 +16,9 @@
         android:background="#FFFFFF"
         android:elevation="4dp">
 
+        <!-- 增加了 btnMenu ID -->
         <TextView
+            android:id="@+id/btnMenu"
             android:layout_width="24dp"
             android:layout_height="24dp"
             android:text="☰"
@@ -38,7 +39,9 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"/>
 
+        <!-- 增加了 btnSearch 和 btnSync ID -->
         <TextView
+            android:id="@+id/btnSearch"
             android:layout_width="24dp"
             android:layout_height="24dp"
             android:text="🔍"
@@ -46,6 +49,7 @@
             android:gravity="center"/>
 
         <TextView
+            android:id="@+id/btnSync"
             android:layout_width="24dp"
             android:layout_height="24dp"
             android:text="☁️"
@@ -54,7 +58,6 @@
             android:layout_marginStart="16dp"/>
     </LinearLayout>
 
-    <!-- 中间滑动区域 -->
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -68,7 +71,6 @@
             android:orientation="vertical"
             android:padding="16dp">
 
-            <!-- 2. 本月结余卡片 (高度 120dp) -->
             <LinearLayout
                 android:id="@+id/cardBalance"
                 android:layout_width="match_parent"
@@ -77,7 +79,6 @@
                 android:padding="16dp"
                 android:layout_marginBottom="16dp">
 
-                <!-- 左侧 60% 区域 -->
                 <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="match_parent"
@@ -105,7 +106,7 @@
                             android:id="@+id/tvIncome"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="本月收入 0.00"
+                            android:text="收入 0.00"
                             android:textSize="12sp"
                             android:textColor="#E5E7EB"/>
                             
@@ -113,14 +114,13 @@
                             android:id="@+id/tvExpense"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="本月支出 0.00"
+                            android:text="支出 0.00"
                             android:textSize="12sp"
                             android:textColor="#E5E7EB"
                             android:layout_marginStart="16dp"/>
                     </LinearLayout>
                 </LinearLayout>
 
-                <!-- 右侧 40% 雏菊图片区域 -->
                 <TextView
                     android:layout_width="0dp"
                     android:layout_height="match_parent"
@@ -130,7 +130,6 @@
                     android:gravity="center_vertical|end"/>
             </LinearLayout>
 
-            <!-- 3. 日期分组账单区 (动态生成列表) -->
             <LinearLayout
                 android:id="@+id/listContainer"
                 android:layout_width="match_parent"
@@ -139,17 +138,18 @@
                 android:background="#FFFFFF"
                 android:padding="12dp"
                 android:layout_marginBottom="16dp">
-                <!-- 代码中将把账单明细塞进这里 -->
             </LinearLayout>
 
-            <!-- 4. 本月预算模块 (高度约 80dp) -->
+            <!-- 预算卡片，现在可以点击了 -->
             <LinearLayout
                 android:id="@+id/cardBudget"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:padding="16dp"
-                android:layout_marginBottom="20dp">
+                android:layout_marginBottom="20dp"
+                android:clickable="true"
+                android:focusable="true">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -167,7 +167,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="本月预算"
+                        android:text="本月预算 (点击修改)"
                         android:textSize="16sp"
                         android:textStyle="bold"
                         android:textColor="#333333"
@@ -181,7 +181,6 @@
                     android:layout_marginTop="12dp"
                     android:gravity="center_vertical">
 
-                    <!-- 进度条区域 -->
                     <LinearLayout
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
@@ -208,7 +207,6 @@
                             android:layout_gravity="center_horizontal"/>
                     </LinearLayout>
 
-                    <!-- 剩余文本区域 -->
                     <LinearLayout
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -226,9 +224,10 @@
                             android:textStyle="bold"/>
                             
                         <TextView
+                            android:id="@+id/tvDailyLeft"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="剩余日均 66.66"
+                            android:text="日均 0.00"
                             android:textSize="12sp"
                             android:textColor="#9CA3AF"
                             android:layout_marginTop="2dp"/>
@@ -239,7 +238,6 @@
         </LinearLayout>
     </ScrollView>
 
-    <!-- 5. 底部导航栏与快捷功能栏 (悬浮在底部) -->
     <LinearLayout
         android:id="@+id/bottomNav"
         android:layout_width="match_parent"
@@ -250,7 +248,6 @@
         android:elevation="8dp"
         android:gravity="center">
 
-        <!-- 巨大的记一笔按钮 -->
         <Button
             android:id="@+id/btnFabAdd"
             android:layout_width="wrap_content"
