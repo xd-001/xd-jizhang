@@ -1,245 +1,270 @@
 package com.myexpense
 
 import android.content.Context
-import android.content.Intent
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
-import android.net.Uri
 import android.os.Bundle
+import android.text.InputType
 import android.view.Gravity
 import android.widget.*
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import org.json.JSONArray
 import org.json.JSONObject
 import java.text.SimpleDateFormat
-import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var rootLayout: LinearLayout
-    private lateinit var recordListLayout: LinearLayout
-    private lateinit var tvTotal: TextView
-    private lateinit var tvMonth: TextView
-    private lateinit var imgHeader: ImageView
+    private lateinit var listContainer: LinearLayout
+    private lateinit var tvBalance: TextView
+    private lateinit var tvIncome: TextView
+    private lateinit var tvExpense: TextView
+    private lateinit var progressBar: ProgressBar
+    private lateinit var tvBudgetProgress: TextView
+    private lateinit var tvBudgetLeft: TextView
+    
     private var jsonArray = JSONArray()
-    private var currentMonthStr = ""
-    private var selectedMonthStr = "" // 当前选中的用来查看的月份
-
-    // 处理选择图片的黑科技
-    private val pickImageLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
-        uri?.let {
-            try {
-                // 向系统申请永久保留这张图片的读取权限
-                contentResolver.takePersistableUriPermission(it, Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                getSharedPreferences("MyExpenseData", Context.MODE_PRIVATE).edit().putString("HEADER_URI", it.toString()).apply()
-                imgHeader.setImageURI(it)
-            } catch (e: Exception) {
-                Toast.makeText(this, "图片加载失败", Toast.LENGTH_SHORT).show()
-            }
-        }
-    }
+    private val monthlyBudget = 2000.00 // 假设本月预算为 2000
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        rootLayout = findViewById(R.id.rootLayout)
-        val editName = findViewById<EditText>(R.id.editName)
-        val editAmount = findViewById<EditText>(R.id.editAmount)
-        val btnSave = findViewById<Button>(R.id.btnSave)
-        tvTotal = findViewById(R.id.tvTotal)
-        tvMonth = findViewById(R.id.tvMonth)
-        recordListLayout = findViewById(R.id.recordListLayout)
-        val circleLayout = findViewById<LinearLayout>(R.id.circleLayout)
-        imgHeader = findViewById(R.id.imgHeader)
-        val btnTheme = findViewById<TextView>(R.id.btnTheme)
-        val btnImage = findViewById<TextView>(R.id.btnImage)
-        val layoutTemplates = findViewById<LinearLayout>(R.id.layoutTemplates)
+        // 绑定控件
+        listContainer = findViewById(R.id.listContainer)
+        tvBalance = findViewById(R.id.tvBalance)
+        tvIncome = findViewById(R.id.tvIncome)
+        tvExpense = findViewById(R.id.tvExpense)
+        progressBar = findViewById(R.id.progressBar)
+        tvBudgetProgress = findViewById(R.id.tvBudgetProgress)
+        tvBudgetLeft = findViewById(R.id.tvBudgetLeft)
+        
+        val cardBalance = findViewById<LinearLayout>(R.id.cardBalance)
+        val cardBudget = findViewById<LinearLayout>(R.id.cardBudget)
+        val btnFabAdd = findViewById<Button>(R.id.btnFabAdd)
 
-        // --- 1. 画出好看的圆角 ---
-        val monthBg = GradientDrawable()
-        monthBg.shape = GradientDrawable.RECTANGLE
-        monthBg.cornerRadius = 50f
-        monthBg.setColor(Color.parseColor("#B3E5E7EB"))
-        tvMonth.background = monthBg
+        // --- 1. 代码绘制高级圆角和背景 ---
+        // 结余卡片背景 (渐变蓝 + 圆角 16dp)
+        val balanceBg = GradientDrawable(GradientDrawable.Orientation.TL_BR, intArrayOf(Color.parseColor("#3B82F6"), Color.parseColor("#2563EB")))
+        balanceBg.cornerRadius = 48f // 约16dp
+        cardBalance.background = balanceBg
 
-        val circleBg = GradientDrawable()
-        circleBg.shape = GradientDrawable.OVAL
-        circleBg.setColor(Color.parseColor("#80F3F4F6"))
-        circleLayout.background = circleBg
+        // 预算卡片背景 (纯白 + 圆角 16dp)
+        val budgetBg = GradientDrawable()
+        budgetBg.setColor(Color.WHITE)
+        budgetBg.cornerRadius = 48f
+        cardBudget.background = budgetBg
 
-        // --- 2. 初始化时间和数据 ---
-        val sdf = SimpleDateFormat("yyyy-MM", Locale.getDefault())
-        currentMonthStr = sdf.format(Date())
-        selectedMonthStr = currentMonthStr // 默认选中当前月
-        tvMonth.text = "$selectedMonthStr ▼"
+        // 列表区域圆角 (纯白 + 圆角 16dp)
+        val listBg = GradientDrawable()
+        listBg.setColor(Color.WHITE)
+        listBg.cornerRadius = 48f
+        listContainer.background = listBg
 
+        // 底部按钮圆角
+        val btnBg = GradientDrawable()
+        btnBg.setColor(Color.parseColor("#3B82F6"))
+        btnBg.cornerRadius = 100f // 胶囊形状
+        btnFabAdd.background = btnBg
+
+        // --- 2. 加载数据 ---
         val sharedPreferences = getSharedPreferences("MyExpenseData", Context.MODE_PRIVATE)
         val historyStr = sharedPreferences.getString("HISTORY_JSON", "[]")
         jsonArray = JSONArray(historyStr)
 
-        // --- 3. 加载自定义封面和主题 ---
-        val savedUri = sharedPreferences.getString("HEADER_URI", null)
-        if (savedUri != null) {
-            try {
-                imgHeader.setImageURI(Uri.parse(savedUri))
-            } catch (e: Exception) { }
-        }
-        val savedTheme = sharedPreferences.getString("THEME_COLOR", "#FFFFFF")
-        rootLayout.setBackgroundColor(Color.parseColor(savedTheme))
-
-        // --- 4. 生成快捷模板按钮 ---
-        val templates = arrayOf("🍱 吃饭", "🚕 交通", "🥤 零食", "🛒 购物", "🏠 房租", "🎮 娱乐", "🏥 医疗")
-        for (t in templates) {
-            val tagBtn = TextView(this)
-            tagBtn.text = t
-            tagBtn.textSize = 14f
-            tagBtn.setTextColor(Color.parseColor("#333333"))
-            
-            val tagBg = GradientDrawable()
-            tagBg.shape = GradientDrawable.RECTANGLE
-            tagBg.cornerRadius = 30f
-            tagBg.setColor(Color.parseColor("#E5E7EB"))
-            tagBtn.background = tagBg
-            tagBtn.setPadding(35, 15, 35, 15)
-
-            val params = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT)
-            params.setMargins(0, 0, 20, 0)
-            tagBtn.layoutParams = params
-
-            tagBtn.setOnClickListener { editName.setText(t) } // 点击填入输入框
-            layoutTemplates.addView(tagBtn)
+        // 首次如果是空的，自动塞入一条你设计稿里的演示数据！
+        if (jsonArray.length() == 0) {
+            val dummy = JSONObject()
+            dummy.put("name", "猫砂")
+            dummy.put("amount", -49.50) // 支出为负数
+            dummy.put("time", "今天 18:44")
+            dummy.put("date", SimpleDateFormat("MM-dd E", Locale.getDefault()).format(Date()))
+            dummy.put("account", "支付宝")
+            jsonArray.put(dummy)
+            sharedPreferences.edit().putString("HISTORY_JSON", jsonArray.toString()).apply()
         }
 
         refreshUI()
 
-        // --- 5. 各种点击事件 ---
-        // 记一笔
-        btnSave.setOnClickListener {
-            val nameStr = editName.text.toString()
-            val amountStr = editAmount.text.toString()
-
-            if (nameStr.isEmpty() || amountStr.isEmpty()) {
-                Toast.makeText(this, "填完整哦！", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-
-            val newRecord = JSONObject()
-            newRecord.put("name", nameStr)
-            newRecord.put("amount", amountStr.toDouble())
-            newRecord.put("month", currentMonthStr) // 记账永远记在真实的当前月
-            
-            jsonArray.put(newRecord)
-            sharedPreferences.edit().putString("HISTORY_JSON", jsonArray.toString()).apply()
-
-            refreshUI()
-            editName.text.clear()
-            editAmount.text.clear()
-            Toast.makeText(this, "记账成功！", Toast.LENGTH_SHORT).show()
-        }
-
-        // 选择封面图片
-        btnImage.setOnClickListener {
-            pickImageLauncher.launch("image/*")
-        }
-
-        // 选择主题颜色
-        btnTheme.setOnClickListener {
-            val themeNames = arrayOf("极简白", "蜜桃粉", "薄荷绿", "海天蓝", "柠檬黄")
-            val themeColors = arrayOf("#FFFFFF", "#FFF0F5", "#F0FFF0", "#F0F8FF", "#FFFFE0")
-            
-            AlertDialog.Builder(this)
-                .setTitle("选择主题颜色")
-                .setItems(themeNames) { _, which ->
-                    val colorHex = themeColors[which]
-                    rootLayout.setBackgroundColor(Color.parseColor(colorHex))
-                    sharedPreferences.edit().putString("THEME_COLOR", colorHex).apply()
-                }
-                .show()
-        }
-
-        // 选择月份
-        tvMonth.setOnClickListener {
-            // 生成最近12个月的列表
-            val monthList = Array(12) { i ->
-                val cal = Calendar.getInstance()
-                cal.add(Calendar.MONTH, -i)
-                sdf.format(cal.time)
-            }
-            
-            AlertDialog.Builder(this)
-                .setTitle("切换月份查看")
-                .setItems(monthList) { _, which ->
-                    selectedMonthStr = monthList[which]
-                    tvMonth.text = "$selectedMonthStr ▼"
-                    refreshUI() // 刷新大圆圈和列表
-                }
-                .show()
+        // --- 3. 记一笔 弹出对话框 ---
+        btnFabAdd.setOnClickListener {
+            showAddRecordDialog()
         }
     }
 
-    private fun refreshUI() {
-        recordListLayout.removeAllViews()
-        val monthTotals = HashMap<String, Double>()
-        var displayMonthTotal = 0.0
+    private fun showAddRecordDialog() {
+        val layout = LinearLayout(this)
+        layout.orientation = LinearLayout.VERTICAL
+        layout.setPadding(50, 40, 50, 0)
 
+        val editName = EditText(this)
+        editName.hint = "花在哪了？(如：打车)"
+        layout.addView(editName)
+
+        val editAmount = EditText(this)
+        editAmount.hint = "金额 (支出加负号，如：-15)"
+        editAmount.inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL or InputType.TYPE_NUMBER_FLAG_SIGNED
+        layout.addView(editAmount)
+
+        AlertDialog.Builder(this)
+            .setTitle("记一笔明细")
+            .setView(layout)
+            .setPositiveButton("保存") { _, _ ->
+                val name = editName.text.toString()
+                val amountStr = editAmount.text.toString()
+                if (name.isNotEmpty() && amountStr.isNotEmpty()) {
+                    val record = JSONObject()
+                    record.put("name", name)
+                    record.put("amount", amountStr.toDouble())
+                    record.put("time", SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date()))
+                    record.put("date", SimpleDateFormat("MM-dd E", Locale.getDefault()).format(Date()))
+                    record.put("account", "微信/支付宝")
+                    
+                    jsonArray.put(record)
+                    getSharedPreferences("MyExpenseData", Context.MODE_PRIVATE)
+                        .edit().putString("HISTORY_JSON", jsonArray.toString()).apply()
+                    refreshUI()
+                }
+            }
+            .setNegativeButton("取消", null)
+            .show()
+    }
+
+    private fun refreshUI() {
+        listContainer.removeAllViews()
+        var totalIncome = 0.0
+        var totalExpense = 0.0
+
+        // 解析并按日期分组
+        val groupedRecords = HashMap<String, MutableList<JSONObject>>()
         for (i in 0 until jsonArray.length()) {
             val item = jsonArray.getJSONObject(i)
             val amount = item.getDouble("amount")
-            val month = if (item.has("month")) item.getString("month") else currentMonthStr
+            if (amount > 0) totalIncome += amount else totalExpense += amount
             
-            val oldTotal = monthTotals[month] ?: 0.0
-            monthTotals[month] = oldTotal + amount
+            val date = if (item.has("date")) item.getString("date") else "未知日期"
+            if (!groupedRecords.containsKey(date)) {
+                groupedRecords[date] = mutableListOf()
+            }
+            groupedRecords[date]!!.add(item)
+        }
 
-            // 只有属于当前【选中的月份】的金额，才算进大圆圈里
-            if (month == selectedMonthStr) {
-                displayMonthTotal += amount
+        // 更新顶部卡片
+        tvBalance.text = String.format(Locale.getDefault(), "本月结余 %.2f", totalIncome + totalExpense)
+        tvIncome.text = String.format(Locale.getDefault(), "本月收入 %.2f", totalIncome)
+        tvExpense.text = String.format(Locale.getDefault(), "本月支出 %.2f", Math.abs(totalExpense))
+
+        // 更新预算卡片
+        val absExpense = Math.abs(totalExpense)
+        val progress = ((absExpense / monthlyBudget) * 100).toInt()
+        progressBar.progress = Math.min(progress, 100)
+        tvBudgetProgress.text = String.format(Locale.getDefault(), "%.2f / %.2f", absExpense, monthlyBudget)
+        tvBudgetLeft.text = String.format(Locale.getDefault(), "剩余 %.2f", monthlyBudget - absExpense)
+
+        // 渲染日期分组列表 (完美还原你的设计要求)
+        for ((date, records) in groupedRecords) {
+            var dayIncome = 0.0
+            var dayExpense = 0.0
+            for (r in records) {
+                val a = r.getDouble("amount")
+                if (a > 0) dayIncome += a else dayExpense += a
+            }
+
+            // --- 标题栏 (高度40dp) ---
+            val headerLayout = LinearLayout(this)
+            headerLayout.orientation = LinearLayout.HORIZONTAL
+            headerLayout.gravity = Gravity.CENTER_VERTICAL
+            headerLayout.setPadding(0, 20, 0, 20)
+
+            val tvDate = TextView(this)
+            tvDate.text = "📅 $date"
+            tvDate.textSize = 14f
+            tvDate.setTextColor(Color.parseColor("#6B7280"))
+            tvDate.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+            headerLayout.addView(tvDate)
+
+            val tvDaySummary = TextView(this)
+            tvDaySummary.text = String.format(Locale.getDefault(), "收 %.2f  支 %.2f", dayIncome, Math.abs(dayExpense))
+            tvDaySummary.textSize = 12f
+            tvDaySummary.setTextColor(Color.parseColor("#9CA3AF"))
+            headerLayout.addView(tvDaySummary)
+            
+            listContainer.addView(headerLayout)
+
+            // --- 账单明细项 (高度60dp) ---
+            for (record in records) {
+                val itemLayout = LinearLayout(this)
+                itemLayout.orientation = LinearLayout.HORIZONTAL
+                itemLayout.gravity = Gravity.CENTER_VERTICAL
+                itemLayout.setPadding(0, 30, 0, 30)
+
+                // 左侧红圈图标
+                val iconTv = TextView(this)
+                iconTv.text = "🐱" // 象征猫砂
+                iconTv.textSize = 18f
+                iconTv.gravity = Gravity.CENTER
+                val iconBg = GradientDrawable()
+                iconBg.shape = GradientDrawable.OVAL
+                iconBg.setColor(Color.parseColor("#FEE2E2")) // 浅红色
+                iconTv.background = iconBg
+                iconTv.layoutParams = LinearLayout.LayoutParams(90, 90) // 约 32dp
+                itemLayout.addView(iconTv)
+
+                // 中间文字
+                val middleLayout = LinearLayout(this)
+                middleLayout.orientation = LinearLayout.VERTICAL
+                val midParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                midParams.setMargins(30, 0, 0, 0)
+                middleLayout.layoutParams = midParams
+
+                val tvName = TextView(this)
+                tvName.text = record.getString("name")
+                tvName.textSize = 16f
+                tvName.setTextColor(Color.parseColor("#111827"))
+                val tvTime = TextView(this)
+                tvTime.text = record.getString("time")
+                tvTime.textSize = 12f
+                tvTime.setTextColor(Color.parseColor("#9CA3AF"))
+                
+                middleLayout.addView(tvName)
+                middleLayout.addView(tvTime)
+                itemLayout.addView(middleLayout)
+
+                // 右侧金额
+                val rightLayout = LinearLayout(this)
+                rightLayout.orientation = LinearLayout.VERTICAL
+                rightLayout.gravity = Gravity.END
+
+                val tvAmt = TextView(this)
+                val amt = record.getDouble("amount")
+                tvAmt.text = String.format(Locale.getDefault(), "%.2f", amt)
+                tvAmt.textSize = 18f
+                tvAmt.setTypeface(null, Typeface.BOLD)
+                tvAmt.setTextColor(if (amt > 0) Color.parseColor("#10B981") else Color.parseColor("#EF4444")) // 收绿支红
+                
+                val tvAcc = TextView(this)
+                tvAcc.text = if (record.has("account")) record.getString("account") else "默认账户"
+                tvAcc.textSize = 10f
+                tvAcc.setTextColor(Color.parseColor("#9CA3AF"))
+
+                rightLayout.addView(tvAmt)
+                rightLayout.addView(tvAcc)
+                itemLayout.addView(rightLayout)
+
+                listContainer.addView(itemLayout)
             }
         }
 
-        // 更新大圆圈金额
-        tvTotal.text = String.format(Locale.getDefault(), "%.2f", displayMonthTotal)
-
-        val sortedMonths = monthTotals.keys.sortedDescending()
-        for (month in sortedMonths) {
-            val monthAmount = monthTotals[month] ?: 0.0
-            
-            val recordLayout = LinearLayout(this)
-            recordLayout.orientation = LinearLayout.HORIZONTAL
-            recordLayout.setPadding(40, 40, 40, 40)
-            
-            val itemBg = GradientDrawable()
-            itemBg.shape = GradientDrawable.RECTANGLE
-            itemBg.cornerRadius = 20f
-            itemBg.setColor(Color.parseColor("#66FFFFFF")) // 半透明白底，适配各种主题色
-            recordLayout.background = itemBg
-
-            val params = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
-            params.setMargins(0, 0, 0, 20)
-            recordLayout.layoutParams = params
-
-            val tvMonthItem = TextView(this)
-            tvMonthItem.text = month
-            tvMonthItem.textSize = 16f
-            tvMonthItem.setTextColor(Color.parseColor("#4B5563"))
-            tvMonthItem.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-
-            val tvAmountItem = TextView(this)
-            tvAmountItem.text = "¥ ${String.format(Locale.getDefault(), "%.2f", monthAmount)}"
-            tvAmountItem.textSize = 18f
-            tvAmountItem.typeface = Typeface.DEFAULT_BOLD
-            tvAmountItem.setTextColor(Color.parseColor("#111827"))
-            tvAmountItem.gravity = Gravity.END
-
-            recordLayout.addView(tvMonthItem)
-            recordLayout.addView(tvAmountItem)
-            
-            recordListLayout.addView(recordLayout)
-        }
+        // --- 更多明细按钮 ---
+        val btnMore = TextView(this)
+        btnMore.text = "查看更多明细 ▼"
+        btnMore.textSize = 12f
+        btnMore.setTextColor(Color.parseColor("#6B7280"))
+        btnMore.gravity = Gravity.CENTER
+        btnMore.setPadding(0, 40, 0, 20)
+        listContainer.addView(btnMore)
     }
 }
